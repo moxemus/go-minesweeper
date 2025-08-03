@@ -34,6 +34,15 @@ func main() {
 			} else {
 				fmt.Println("Your choise is: ", x, y, " result - ", result)
 				visible[x-1][y-1] = true
+
+				if result == 0 {
+					openZeros(&cells, &visible, x-1, y-1)
+				}
+
+				if checkWin(cells, visible) {
+					fmt.Println("Victory! Game restarted.")
+					initMap(&cells, &visible)
+				}
 			}
 
 		} else if input == "q" {
@@ -51,6 +60,7 @@ func initMap(vals *[height][width]int, visible *[height][width]bool) {
 	for i := 0; i < height; i++ {
 		for j := 0; j < width; j++ {
 			vals[i][j] = 0
+			visible[i][j] = false
 		}
 	}
 
@@ -60,13 +70,6 @@ func initMap(vals *[height][width]int, visible *[height][width]bool) {
 
 		vals[x][y] = -1
 		updateBombCells(vals, x, y)
-	}
-
-	// Clear visible
-	for i := range visible {
-		for j := range visible[i] {
-			visible[i][j] = false
-		}
 	}
 }
 
@@ -117,6 +120,40 @@ func drawMap(vals [height][width]int, visible [height][width]bool) {
 
 		fmt.Println()
 	}
+}
+
+func openZeros(cells *[height][width]int, visible *[height][width]bool, x, y int) {
+	for dx := -1; dx <= 1; dx++ {
+		for dy := -1; dy <= 1; dy++ {
+			nx := x + dx
+			ny := y + dy
+
+			if nx < 0 || ny < 0 || nx >= width || ny >= height {
+				continue
+			}
+			if visible[nx][ny] {
+				continue
+			}
+
+			visible[nx][ny] = true
+
+			if cells[nx][ny] == 0 {
+				openZeros(cells, visible, nx, ny)
+			}
+		}
+	}
+}
+
+func checkWin(cells [height][width]int, visible [height][width]bool) bool {
+	for i := 0; i < height; i++ {
+		for j := 0; j < width; j++ {
+			if cells[j][i] != -1 && !visible[j][i] {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 func clearScreen() {
