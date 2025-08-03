@@ -11,12 +11,13 @@ const bombs_count = 5
 
 func main() {
 	var cells [height][width]int
+	var visible [height][width]bool
 	var input string
 
-	initMap(&cells)
+	initMap(&cells, &visible)
 
 	for {
-		drawMap(cells)
+		drawMap(cells, visible)
 
 		_, err := fmt.Scanln(&input)
 		clearScreen()
@@ -29,15 +30,16 @@ func main() {
 
 			if result == -1 {
 				fmt.Println("Game over. Game restarted.")
-				initMap(&cells)
+				initMap(&cells, &visible)
 			} else {
 				fmt.Println("Your choise is: ", x, y, " result - ", result)
+				visible[x-1][y-1] = true
 			}
 
 		} else if input == "q" {
 			break
 		} else if input == "r" {
-			initMap(&cells)
+			initMap(&cells, &visible)
 			continue
 		} else {
 			fmt.Println("Invalid input. Please select cell coordinates in format X,Y")
@@ -45,7 +47,7 @@ func main() {
 	}
 }
 
-func initMap(vals *[height][width]int) {
+func initMap(vals *[height][width]int, visible *[height][width]bool) {
 	for i := 0; i < height; i++ {
 		for j := 0; j < width; j++ {
 			vals[i][j] = 0
@@ -58,6 +60,13 @@ func initMap(vals *[height][width]int) {
 
 		vals[x][y] = -1
 		updateBombCells(vals, x, y)
+	}
+
+	// Clear visible
+	for i := range visible {
+		for j := range visible[i] {
+			visible[i][j] = false
+		}
 	}
 }
 
@@ -75,7 +84,7 @@ func updateBombCells(vals *[height][width]int, x, y int) {
 	}
 }
 
-func drawMap(vals [height][width]int) {
+func drawMap(vals [height][width]int, visible [height][width]bool) {
 	// Column coordinates
 	fmt.Print("    ")
 	for i := 0; i < width; i++ {
@@ -95,10 +104,14 @@ func drawMap(vals [height][width]int) {
 		fmt.Printf("%2d |", i+1)
 
 		for j := 0; j < width; j++ {
-			if vals[j][i] == -1 {
-				fmt.Printf("%3c ", 'x')
+			if !visible[j][i] {
+				fmt.Printf("%3c ", '#')
 			} else {
-				fmt.Printf("%3d ", vals[j][i])
+				if vals[j][i] == -1 {
+					fmt.Printf("%3c ", 'x')
+				} else {
+					fmt.Printf("%3d ", vals[j][i])
+				}
 			}
 		}
 
