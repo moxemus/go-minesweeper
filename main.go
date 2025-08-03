@@ -66,11 +66,11 @@ func updateBombCells(vals *[height][width]int, x, y int) {
 		for dx := -1; dx <= 1; dx++ {
 			ny, nx := y+dy, x+dx
 
-			if ny < 0 || ny >= height || nx < 0 || nx >= width || vals[ny][nx] == -1 {
+			if ny < 0 || ny >= height || nx < 0 || nx >= width || vals[nx][ny] == -1 {
 				continue
 			}
 
-			vals[ny][nx]++
+			vals[nx][ny]++
 		}
 	}
 }
