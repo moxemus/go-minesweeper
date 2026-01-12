@@ -3,91 +3,123 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"strconv"
 )
 
 const height = 9
 const width = 9
 const bombs_count = 5
 
-func main() {
-	var cells [height][width]int
-	var visible [height][width]bool
-	var input string
+type Cell struct {
+	Value   int
+	Visible bool
+}
 
-	initMap(&cells, &visible)
+type GameMap struct {
+	Height    int
+	Width     int
+	BombCount int
+	Grid      [][]Cell
+}
 
-	for {
-		drawMap(cells, visible)
+func (g *GameMap) Init(h, w, bombs int) {
+	g.Height = h
+	g.Width = w
+	g.BombCount = bombs
+	g.Grid = make([][]Cell, g.Height)
 
-		_, err := fmt.Scanln(&input)
-		clearScreen()
+	// Init map
+	for i := 0; i < g.Height; i++ {
+		g.Grid[i] = make([]Cell, g.Width)
 
-		if len(input) == 3 && input[0] >= '1' && input[0] <= '9' && input[2] >= '1' && input[2] <= '9' && err == nil {
-			// Coordinates for current game
-			x := int(input[0] - '0')
-			y := int(input[2] - '0')
-			var result = cells[x-1][y-1]
+		for j := 0; j < g.Width; j++ {
+			g.Grid[i][j].Value = 0
+			g.Grid[i][j].Visible = false
+		}
+	}
 
-			if result == -1 {
-				fmt.Println("Game over. Game restarted.")
-				initMap(&cells, &visible)
-			} else {
-				fmt.Println("Your choise is: ", x, y, " result - ", result)
-				visible[x-1][y-1] = true
+	// Add bombs
+	for i := 0; i < g.BombCount; i++ {
+		y := rand.Intn(g.Height)
+		x := rand.Intn(g.Width)
 
-				if result == 0 {
-					openZeros(&cells, &visible, x-1, y-1)
+		g.Grid[x][y].Value = -1
+
+		for dy := -1; dy <= 1; dy++ {
+			for dx := -1; dx <= 1; dx++ {
+				ny, nx := y+dy, x+dx
+
+				if ny < 0 || ny >= g.Height || nx < 0 || nx >= g.Width || g.Grid[nx][ny].Value == -1 {
+					continue
 				}
 
-				if checkWin(cells, visible) {
-					fmt.Println("Victory! Game restarted.")
-					initMap(&cells, &visible)
-				}
+				g.Grid[nx][ny].Value++
 			}
-
-		} else if input == "q" {
-			break
-		} else if input == "r" {
-			initMap(&cells, &visible)
-			continue
-		} else {
-			fmt.Println("Invalid input. Please select cell coordinates in format X,Y")
 		}
 	}
 }
 
-func initMap(vals *[height][width]int, visible *[height][width]bool) {
-	for i := 0; i < height; i++ {
-		for j := 0; j < width; j++ {
-			vals[i][j] = 0
-			visible[i][j] = false
-		}
-	}
+func (g *GameMap) openZeros(x, y int) {
+	for dx := -1; dx <= 1; dx++ {
+		for dy := -1; dy <= 1; dy++ {
+			nx := x + dx
+			ny := y + dy
 
-	for i := 0; i < bombs_count; i++ {
-		y := rand.Intn(height)
-		x := rand.Intn(width)
-
-		vals[x][y] = -1
-		updateBombCells(vals, x, y)
-	}
-}
-
-func updateBombCells(vals *[height][width]int, x, y int) {
-	for dy := -1; dy <= 1; dy++ {
-		for dx := -1; dx <= 1; dx++ {
-			ny, nx := y+dy, x+dx
-
-			if ny < 0 || ny >= height || nx < 0 || nx >= width || vals[nx][ny] == -1 {
+			if nx < 0 || ny < 0 || nx >= width || ny >= g.Height {
 				continue
 			}
 
-			vals[nx][ny]++
+			if g.Grid[nx][ny].Visible {
+				continue
+			}
+
+			g.Grid[nx][ny].Visible = true
+
+			if g.Grid[nx][ny].Value == 0 {
+				g.openZeros(nx, ny)
+			}
 		}
 	}
 }
 
-func drawMap(vals [height][width]int, visible [height][width]bool) {
+func (g *GameMap) checkWin() bool {
+	for i := 0; i < g.Height; i++ {
+		for j := 0; j < g.Width; j++ {
+			if g.Grid[j][i].Value != -1 && !g.Grid[j][i].Visible {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+func (g *GameMap) pressCell(x, y int) bool {
+	g.Grid[x][y].Visible = true
+
+	return g.Grid[x][y].Value == -1
+}
+
+// Screen Handler
+type Drawer interface {
+	drawMap()
+}
+
+type TerminalDrawer struct {
+	drawer Drawer
+}
+
+func Init(d Drawer) *TerminalDrawer {
+	return &TerminalDrawer{
+		drawer: d,
+	}
+}
+
+func (s *TerminalDrawer) write(text string) {
+	fmt.Print(text)
+}
+
+func (s *TerminalDrawer) drawMap(cells [][]Cell, height, width int) {
 	// Column coordinates
 	fmt.Print("    ")
 	for i := 0; i < width; i++ {
@@ -107,14 +139,10 @@ func drawMap(vals [height][width]int, visible [height][width]bool) {
 		fmt.Printf("%2d |", i+1)
 
 		for j := 0; j < width; j++ {
-			if !visible[j][i] {
+			if !cells[j][i].Visible {
 				fmt.Printf("%3c ", '#')
 			} else {
-				if vals[j][i] == -1 {
-					fmt.Printf("%3c ", 'x')
-				} else {
-					fmt.Printf("%3d ", vals[j][i])
-				}
+				fmt.Printf("%3d ", cells[j][i].Value)
 			}
 		}
 
@@ -122,40 +150,49 @@ func drawMap(vals [height][width]int, visible [height][width]bool) {
 	}
 }
 
-func openZeros(cells *[height][width]int, visible *[height][width]bool, x, y int) {
-	for dx := -1; dx <= 1; dx++ {
-		for dy := -1; dy <= 1; dy++ {
-			nx := x + dx
-			ny := y + dy
-
-			if nx < 0 || ny < 0 || nx >= width || ny >= height {
-				continue
-			}
-			if visible[nx][ny] {
-				continue
-			}
-
-			visible[nx][ny] = true
-
-			if cells[nx][ny] == 0 {
-				openZeros(cells, visible, nx, ny)
-			}
-		}
-	}
+func (s *TerminalDrawer) clear() {
+	fmt.Println("\033[H\033[2J")
 }
 
-func checkWin(cells [height][width]int, visible [height][width]bool) bool {
-	for i := 0; i < height; i++ {
-		for j := 0; j < width; j++ {
-			if cells[j][i] != -1 && !visible[j][i] {
-				return false
+func main() {
+	gameMap := &GameMap{}
+	gameMap.Init(height, width, bombs_count)
+
+	drawHandler := &TerminalDrawer{}
+
+	var input string
+
+	for {
+		drawHandler.drawMap(gameMap.Grid, gameMap.Height, gameMap.Width)
+
+		_, err := fmt.Scanln(&input)
+		drawHandler.clear()
+
+		// Handle user input
+		if len(input) == 3 && input[0] >= '1' && input[0] <= '9' && input[2] >= '1' && input[2] <= '9' && err == nil {
+			x := int(input[0]-'0') - 1
+			y := int(input[2]-'0') - 1
+
+			// Handle cell click and check is user was exploded
+			if gameMap.pressCell(x, y) {
+				drawHandler.write("Game over. Game restarted.")
+				gameMap.Init(height, width, bombs_count)
+			} else {
+				drawHandler.write("Your choise is: " + strconv.Itoa(x+1) + strconv.Itoa(y+1) + " result - 0")
+				gameMap.openZeros(x, y)
 			}
+
+			if gameMap.checkWin() {
+				drawHandler.write("Victory! Game restarted.")
+				gameMap.Init(height, width, bombs_count)
+			}
+
+		} else if input == "q" {
+			break
+		} else if input == "r" {
+			gameMap.Init(height, width, bombs_count)
+		} else {
+			drawHandler.write("Invalid input. Please select cell coordinates in format X,Y")
 		}
 	}
-
-	return true
-}
-
-func clearScreen() {
-	fmt.Print("\033[H\033[2J")
 }
