@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"strconv"
 )
 
 const height = 9
@@ -109,9 +108,14 @@ func (g *GameMap) checkWin() bool {
 }
 
 func (g *GameMap) openCell(point Point) bool {
-	g.grid[point.X][point.Y].Visible = true
+	if g.grid[point.X][point.Y].Value == -1 {
+		return true
+	}
 
-	return g.grid[point.X][point.Y].Value == -1
+	g.grid[point.X][point.Y].Visible = true
+	g.openZeros(point)
+
+	return false
 }
 
 // Drawer logic
@@ -201,6 +205,7 @@ func main() {
 
 	var drawHandler Drawer
 	var inputHandler UserInput
+	var restartNeeded bool
 
 	drawHandler = &TerminalDrawer{}
 	inputHandler = &TerminalInput{}
@@ -222,25 +227,21 @@ func main() {
 		case "q":
 			return
 		case "r":
-			gameMap.restart()
+			restartNeeded = true
 		case "":
-			// Handle lose
-			if gameMap.openCell(userMessage.Point) {
-				drawHandler.write("Game over. Game restarted.")
-				gameMap.restart()
-				break
-			}
-
-			drawHandler.write("Your choise is: " + strconv.Itoa(userMessage.X+1) + " " + strconv.Itoa(userMessage.Y+1))
-			gameMap.openZeros(userMessage.Point)
-
-			// Handle victory
-			if gameMap.checkWin() {
-				drawHandler.write("Victory! Game restarted.")
-				gameMap.restart()
+			// Handle lose/win
+			if restartNeeded = gameMap.openCell(userMessage.Point); restartNeeded {
+				drawHandler.write("Game over")
+			} else if restartNeeded = gameMap.checkWin(); restartNeeded {
+				drawHandler.write("Victory")
 			}
 		default:
 			drawHandler.write("Invalid command")
+		}
+
+		if restartNeeded {
+			gameMap.restart()
+			restartNeeded = false
 		}
 	}
 }
