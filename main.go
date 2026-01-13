@@ -182,10 +182,9 @@ type TerminalInput struct {
 	input UserInput
 }
 
-func (t *TerminalInput) getInput() (UserMessage, error) {
+func (t *TerminalInput) getInput() (userMessage UserMessage, err error) {
 	var input string
-	_, err := fmt.Scanln(&input)
-	userMessage := UserMessage{}
+	_, err = fmt.Scanln(&input)
 
 	if len(input) == 3 && input[0] >= '1' && input[0] <= '9' && input[2] >= '1' && input[2] <= '9' && err == nil {
 		userMessage.X = int(input[0]-'0') - 1
@@ -193,10 +192,10 @@ func (t *TerminalInput) getInput() (UserMessage, error) {
 	} else if len(input) == 1 && err == nil {
 		userMessage.Command = input
 	} else {
-		return userMessage, errors.New("Invalid input. Please select cell coordinates in format X,Y")
+		err = errors.New("Invalid input. Please select cell coordinates in format X,Y")
 	}
 
-	return userMessage, nil
+	return userMessage, err
 }
 
 func main() {
