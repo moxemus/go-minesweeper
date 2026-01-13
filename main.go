@@ -117,12 +117,6 @@ type TerminalDrawer struct {
 	drawer Drawer
 }
 
-func Init(d Drawer) *TerminalDrawer {
-	return &TerminalDrawer{
-		drawer: d,
-	}
-}
-
 func (s *TerminalDrawer) write(text string) {
 	fmt.Println(text)
 }
