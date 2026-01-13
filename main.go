@@ -36,14 +36,12 @@ func (g *GameMap) Init(h, w, bombs int) {
 	// Init map
 	for i := 0; i < g.height; i++ {
 		g.grid[i] = make([]Cell, g.width)
-
-		for j := 0; j < g.width; j++ {
-			g.grid[i][j].Value = 0
-			g.grid[i][j].Visible = false
-		}
 	}
 
-	// Add bombs
+	g.loadBombs()
+}
+
+func (g *GameMap) loadBombs() {
 	for i := 0; i < g.bombCount; i++ {
 		var x, y int
 
