@@ -49,9 +49,13 @@ func (g *GameMap) Init(h, w, bombs int) {
 		var x, y int
 
 		// Find an empty place for bomb
-		for g.grid[x][y].Value == -1 {
+		for {
 			x = rand.Intn(g.width)
 			y = rand.Intn(g.height)
+
+			if g.grid[x][y].Value != -1 {
+				break
+			}
 		}
 
 		g.grid[x][y].Value = -1
