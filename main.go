@@ -63,26 +63,21 @@ func (g *GameMap) Init(h, w, bombs int) {
 	}
 }
 
-func (g *GameMap) openZeros(point Point) {
+func (g *GameMap) openZeros(start Point) {
 	for dx := -1; dx <= 1; dx++ {
 		for dy := -1; dy <= 1; dy++ {
-			nx := point.X + dx
-			ny := point.Y + dy
+			point := Point{X: start.X + dx, Y: start.Y + dy}
 
-			if nx < 0 || ny < 0 || nx >= width || ny >= g.height {
+			if point.X < 0 || point.Y < 0 || point.X >= width || point.Y >= g.height || g.grid[point.X][point.Y].Visible {
 				continue
 			}
 
-			if g.grid[nx][ny].Visible {
-				continue
+			if g.grid[point.X][point.Y].Value != -1 {
+				g.grid[point.X][point.Y].Visible = true
 			}
 
-			if g.grid[nx][ny].Value != -1 {
-				g.grid[nx][ny].Visible = true
-			}
-
-			if g.grid[nx][ny].Value == 0 {
-				g.openZeros(Point{X: nx, Y: ny})
+			if g.grid[point.X][point.Y].Value == 0 {
+				g.openZeros(point)
 			}
 		}
 	}
@@ -100,7 +95,7 @@ func (g *GameMap) checkWin() bool {
 	return true
 }
 
-func (g *GameMap) pressCell(point Point) bool {
+func (g *GameMap) openCell(point Point) bool {
 	g.grid[point.X][point.Y].Visible = true
 
 	return g.grid[point.X][point.Y].Value == -1
@@ -204,27 +199,33 @@ func main() {
 
 		drawHandler.clearScreen()
 
-		// Handle user input
 		if err != nil {
 			drawHandler.write("Invalid input")
-		} else if userMessage.Command == "" {
-			if gameMap.pressCell(userMessage.Point) {
+			continue
+		}
+
+		// Handle user input
+		switch userMessage.Command {
+		case "q":
+			return
+		case "r":
+			gameMap.Init(height, width, bombs_count)
+		case "":
+			// Handle lose
+			if gameMap.openCell(userMessage.Point) {
 				drawHandler.write("Game over. Game restarted.")
 				gameMap.Init(height, width, bombs_count)
-			} else {
-				drawHandler.write("Your choise is: " + strconv.Itoa(userMessage.X+1) + " " + strconv.Itoa(userMessage.Y+1))
-				gameMap.openZeros(userMessage.Point)
+				break
 			}
+
+			drawHandler.write("Your choise is: " + strconv.Itoa(userMessage.X+1) + " " + strconv.Itoa(userMessage.Y+1))
+			gameMap.openZeros(userMessage.Point)
 
 			if gameMap.checkWin() {
 				drawHandler.write("Victory! Game restarted.")
 				gameMap.Init(height, width, bombs_count)
 			}
-		} else if userMessage.Command == "q" {
-			break
-		} else if userMessage.Command == "r" {
-			gameMap.Init(height, width, bombs_count)
-		} else {
+		default:
 			drawHandler.write("Invalid command")
 		}
 	}
