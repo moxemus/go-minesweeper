@@ -63,6 +63,10 @@ func (g *GameMap) Init(h, w, bombs int) {
 	}
 }
 
+func (g *GameMap) restart() {
+	g.Init(g.height, g.width, g.bombCount)
+}
+
 func (g *GameMap) openZeros(start Point) {
 	for dx := -1; dx <= 1; dx++ {
 		for dy := -1; dy <= 1; dy++ {
@@ -200,7 +204,7 @@ func main() {
 		drawHandler.clearScreen()
 
 		if err != nil {
-			drawHandler.write("Invalid input")
+			drawHandler.write(err.Error())
 			continue
 		}
 
@@ -209,21 +213,22 @@ func main() {
 		case "q":
 			return
 		case "r":
-			gameMap.Init(height, width, bombs_count)
+			gameMap.restart()
 		case "":
 			// Handle lose
 			if gameMap.openCell(userMessage.Point) {
 				drawHandler.write("Game over. Game restarted.")
-				gameMap.Init(height, width, bombs_count)
+				gameMap.restart()
 				break
 			}
 
 			drawHandler.write("Your choise is: " + strconv.Itoa(userMessage.X+1) + " " + strconv.Itoa(userMessage.Y+1))
 			gameMap.openZeros(userMessage.Point)
 
+			// Handle victory
 			if gameMap.checkWin() {
 				drawHandler.write("Victory! Game restarted.")
-				gameMap.Init(height, width, bombs_count)
+				gameMap.restart()
 			}
 		default:
 			drawHandler.write("Invalid command")
