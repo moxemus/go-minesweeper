@@ -46,11 +46,21 @@ func (g *GameMap) Init(h, w, bombs int) {
 
 	// Add bombs
 	for i := 0; i < g.bombCount; i++ {
-		y := rand.Intn(g.height)
-		x := rand.Intn(g.width)
+		var x, y int
+
+		// Find an empty place for bomb
+		for {
+			y = rand.Intn(g.height)
+			x = rand.Intn(g.width)
+
+			if g.grid[x][y].Value != -1 {
+				break
+			}
+		}
 
 		g.grid[x][y].Value = -1
 
+		// Update numbers near bomb
 		for dy := -1; dy <= 1; dy++ {
 			for dx := -1; dx <= 1; dx++ {
 				ny, nx := y+dy, x+dx
