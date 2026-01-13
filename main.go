@@ -77,7 +77,9 @@ func (g *GameMap) openZeros(point Point) {
 				continue
 			}
 
-			g.grid[nx][ny].Visible = true
+			if g.grid[nx][ny].Value != -1 {
+				g.grid[nx][ny].Visible = true
+			}
 
 			if g.grid[nx][ny].Value == 0 {
 				g.openZeros(Point{X: nx, Y: ny})
