@@ -70,18 +70,17 @@ func (g *GameMap) restart() {
 func (g *GameMap) openZeros(start Point) {
 	for dx := -1; dx <= 1; dx++ {
 		for dy := -1; dy <= 1; dy++ {
-			point := Point{X: start.X + dx, Y: start.Y + dy}
+			x := start.X + dx
+			y := start.Y + dy
 
-			if point.X < 0 || point.Y < 0 || point.X >= width || point.Y >= g.height || g.grid[point.X][point.Y].Visible {
+			if x < 0 || y < 0 || x >= width || y >= g.height || g.grid[x][y].Visible || g.grid[x][y].Value == -1 {
 				continue
 			}
 
-			if g.grid[point.X][point.Y].Value != -1 {
-				g.grid[point.X][point.Y].Visible = true
-			}
+			g.grid[x][y].Visible = true
 
-			if g.grid[point.X][point.Y].Value == 0 {
-				g.openZeros(point)
+			if g.grid[x][y].Value == 0 {
+				g.openZeros(Point{X: x, Y: y})
 			}
 		}
 	}
